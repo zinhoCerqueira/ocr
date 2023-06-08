@@ -1,13 +1,13 @@
 from pdf2image import convert_from_path
 import re
 import cv2
+import openai
 import numpy as np
 import pytesseract
 
 # Prepara uma lista de dados previamente verificados de resoluções
 # aleatórias do CONSEPE. Ela será comparada com os dados obtidos pelo
 # OCE e verificar a taxa de acerto desta analise.
-
 
 def aleatory_resolution():
 
@@ -106,7 +106,8 @@ def aleatory_resolution():
     ]
     print("Resoluções de Teste")
 
-def apply_tesseract():
+# Converte o pdf em imagens, o tesseract apenas trabalha com imagens.
+def convert_pdf_img():
 
     # Caminho para o arquivo PDF
     pdf_path = "pdfs/p10.pdf"
@@ -117,12 +118,36 @@ def apply_tesseract():
 
     return images
 
+def analise_Resolucao(texto):
+
+    padrao = r"[Rr][Ee][Ss][Oo][Ll][Uu][ÇCGcçg][Aa][Oo]\s(CONSEPE|CONSU)\s(\d+\s/\s(\d+))"
+
+    resultado = re.search(padrao, texto)
+    
+    if resultado:
+        n_Resolucao = resultado.group(2)
+        ano = resultado.group(3)
+        print("Número da Resolução:", n_Resolucao)
+        print("Ano:", ano)
+    # Caso a resolução não seja encontrada retorna uma string com 4#
+    else:
+        print("Trecho não encontrado")
+        n_Resolucao = ano = "####"
+        
+    return n_Resolucao, ano
+
+
+
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
 # START -----------------------------------------------------------------------
 
-aleatory_resolution()
+# aleatory_resolution()
 
-data = apply_tesseract()
-
+data = convert_pdf_img()
+    
 # Erro em que o tesseract não é encontrado pelo py
 pytesseract.pytesseract.tesseract_cmd = 'C:\Program Files\OCR\Tesseract.exe'
 
@@ -134,29 +159,12 @@ for i, img in enumerate(data):
     custom_config = r'--oem 3 --psm 6'
     result = pytesseract.image_to_string(img_cv, config=custom_config)
 
-    # Procura a Resolução e ano ------------------------------------------------
-    if(i == 0):
-        
-        texto1 = "RESOLUÇÃO CONSEPE Nº 001/2008"
-        texto2 = "RESOLUÇÃO CONSEPE 001 / 2008"
-        texto3 = "RESOLUÇÃO CONSEPE - 02/82"
-
-        expressao_regular = r"Resolução\sConsepe\s(?:Nº\s)?(\d+/\d+|\d+)"
-        # \s: espaço em branco
-        # (?:Nº\s)?: corresponde a "Nº " de forma opcional, o ?: é utilizado para criar um grupo não capturador
-        # (\d+/\d+|\d+): corresponde a um padrão de número/ano ou apenas número
-
-        resolucao = re.search(expressao_regular, result)
-        if resolucao:
-            resolucao = resolucao.group(1)
-            print("Resolução :", resolucao)
-        else:
-            print("deu ruim na resolucao")
-
-
-
     # Exibindo o resultado
-    print("Texto na página", i+1, "do PDF:")
-    print(result)
-    print("============================")
+    # print("Texto na página", i+1, "do PDF:")
+    # print(result)
+    # print("============================")
 
+    # Caso seja a primeira página do documento, pegue o número da resolução e o ano correspondente.
+    if i == 0:
+        print("Analisando a página", i+1)
+        resol, ano = analise_Resolucao(result)
