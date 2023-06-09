@@ -120,9 +120,12 @@ def convert_pdf_img():
 
 def analise_Resolucao(texto):
 
-    padrao = r"[Rr][Ee][Ss][Oo][Ll][Uu][ÇCGcçg][Aa][Oo]\s(CONSEPE|CONSU)\s(\d+\s/\s(\d+))"
+    padrao_resolucao = r"[Rr][Ee][Ss][Oo][Ll][Uu][ÇCGcçg][Aa][Oo]\s(CONSEPE|CONSU)\s(\d+\s/\s(\d+))"
+    padrao_data = r"(?<!\d)\d{1,2}\s?/\s?\d{1,2}\s?/\s?\d{4}(?!\d)"
 
-    resultado = re.search(padrao, texto)
+
+    resultado = re.search(padrao_resolucao, texto)
+    resultado_data = re.search(padrao_data, texto)
     
     if resultado:
         n_Resolucao = resultado.group(2)
@@ -133,8 +136,14 @@ def analise_Resolucao(texto):
     else:
         print("Trecho não encontrado")
         n_Resolucao = ano = "####"
+
+    if resultado_data:
+        data = resultado_data.group()
+        print("Data:", data)
+    else:
+        data = "####"
         
-    return n_Resolucao, ano
+    return n_Resolucao, ano, data
 
 
 
@@ -167,4 +176,4 @@ for i, img in enumerate(data):
     # Caso seja a primeira página do documento, pegue o número da resolução e o ano correspondente.
     if i == 0:
         print("Analisando a página", i+1)
-        resol, ano = analise_Resolucao(result)
+        resol, ano, data = analise_Resolucao(result)
