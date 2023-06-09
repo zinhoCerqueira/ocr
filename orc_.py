@@ -9,103 +9,6 @@ import pytesseract
 # aleatórias do CONSEPE. Ela será comparada com os dados obtidos pelo
 # OCE e verificar a taxa de acerto desta analise.
 
-def aleatory_resolution():
-
-    resolutions = [
-        {
-            "numero": "01/82",
-            "ano": 1982,
-            "data": "09/12/1982",
-            "reitor": "José Maria Nunes Marques",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "02/82",
-            "ano": 1982,
-            "data": "09/12/1982",
-            "reitor": "José Maria Nunes Marques",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "01/98",
-            "ano": 1998,
-            "data": "29/01/1998",
-            "reitor": "José Onofre Gurjão Boavista da Cunha",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "01/2000",
-            "ano": 2000,
-            "data": "05/01/2000",
-            "reitor": "Anaci Bispo Paim",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "001/2005",
-            "ano": 2005,
-            "data": "03/01/2005",
-            "reitor": "José Onofre Gurjão Boavista da Cunha",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "001/2008",
-            "ano": 2008,
-            "data": "17/01/2008",
-            "reitor": "Washington Almeida Moura",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "001/2010",
-            "ano": 2010,
-            "data": "12/01/2010",
-            "reitor": "José Carlos Barreto de Santana",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "01/2014",
-            "ano": 2014,
-            "data": "23/01/2014",
-            "reitor": "José Carlos Barreto de Santana",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "001/2018",
-            "ano": 2018,
-            "data": "19/01/2018",
-            "reitor": "Evandro do Nascimento Silva",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        },
-        {
-            "numero": "059/2023",
-            "ano": 2023,
-            "data": "19/05/2023",
-            "reitor": "Amali de Angelis Mussi",
-            "cabecalho": "",
-            "texto": "",
-            "link": ""
-        }
-
-    ]
-    print("Resoluções de Teste")
-
 # Converte o pdf em imagens, o tesseract apenas trabalha com imagens.
 def convert_pdf_img():
 
@@ -118,7 +21,7 @@ def convert_pdf_img():
 
     return images
 
-def analise_Resolucao(texto):
+def analise_pagina_1(texto):
 
     padrao_resolucao = r"[Rr][Ee][Ss][Oo][Ll][Uu][ÇCGcçg][Aa][Oo]\s(CONSEPE|CONSU)\s(\d+\s/\s(\d+))"
     padrao_data = r"(?<!\d)\d{1,2}\s?/\s?\d{1,2}\s?/\s?\d{4}(?!\d)"
@@ -130,32 +33,39 @@ def analise_Resolucao(texto):
     if resultado:
         n_Resolucao = resultado.group(2)
         ano = resultado.group(3)
-        print("Número da Resolução:", n_Resolucao)
-        print("Ano:", ano)
+
     # Caso a resolução não seja encontrada retorna uma string com 4#
     else:
-        print("Trecho não encontrado")
         n_Resolucao = ano = "####"
 
     if resultado_data:
         data = resultado_data.group()
-        print("Data:", data)
     else:
         data = "####"
         
     return n_Resolucao, ano, data
 
+def analise_reitora(texto):
+    padrao_reitor = r"Documento assinado eletronicamente por\s(.*?)(?=,)"
+    valor_encontrado = re.search(padrao_reitor, texto)
+
+    if valor_encontrado:
+        valor = valor_encontrado.group(1)
+    else:
+        valor = "####"
+
+    return valor
 
 
-# START -----------------------------------------------------------------------
-# START -----------------------------------------------------------------------
-# START -----------------------------------------------------------------------
-# START -----------------------------------------------------------------------
-# START -----------------------------------------------------------------------
 
-# aleatory_resolution()
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
+# START -----------------------------------------------------------------------
 
 data = convert_pdf_img()
+valor_reitor = False
     
 # Erro em que o tesseract não é encontrado pelo py
 pytesseract.pytesseract.tesseract_cmd = 'C:\Program Files\OCR\Tesseract.exe'
@@ -175,5 +85,18 @@ for i, img in enumerate(data):
 
     # Caso seja a primeira página do documento, pegue o número da resolução e o ano correspondente.
     if i == 0:
-        print("Analisando a página", i+1)
-        resol, ano, data = analise_Resolucao(result)
+        resol, ano, data = analise_pagina_1(result)
+    
+    # Analisa em alguma página se encontra o formato especifico onde se nomeia o reitor/reitora.
+    if not valor_reitor:
+        reitor = analise_reitora(result)
+        if reitor != "####":
+            valor_reitor = True
+
+print("Resolução: ", resol)
+print("Ano: ", ano)
+print("Data: ", data)
+print("Reitor: ", reitor) 
+
+    
+
