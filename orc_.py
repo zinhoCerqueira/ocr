@@ -4,16 +4,17 @@ import cv2
 import openai
 import numpy as np
 import pytesseract
+from PIL import Image
 
 # Prepara uma lista de dados previamente verificados de resoluções
 # aleatórias do CONSEPE. Ela será comparada com os dados obtidos pelo
 # OCE e verificar a taxa de acerto desta analise.
 
 # Converte o pdf em imagens, o tesseract apenas trabalha com imagens.
-def convert_pdf_img():
+def convert_pdf_img(pdf):
 
     # Caminho para o arquivo PDF
-    pdf_path = "pdfs/11.pdf"
+    pdf_path = pdf
 
     # Convertendo a primeira página do PDF em imagem
     images = convert_from_path(
@@ -50,7 +51,6 @@ def analise_pagina_1(texto):
     
     # Pega os addos referentes ao cabeçalho
     if resultado_cabecalho:
-        print(resultado_cabecalho)
         cabecalho = resultado_cabecalho.group(2)
     else:
         cabecalho = "####"
@@ -68,6 +68,37 @@ def analise_reitora(texto):
 
     return valor
 
+def analise_texto(pdf):
+
+    imagens = convert_pdf_img(pdf)
+    largura, altura = imagens[0].size
+    imagem_final = Image.new("RGB", (largura, altura*len(imagens)))
+    count = 0
+
+    for i in imagens:
+
+        imagem_final.paste(i, (0, altura*count))
+        count = count + 1
+
+    imagem_final.save("ima.jpg")
+
+    img_cv = cv2.cvtColor(np.array(imagem_final), cv2.COLOR_RGB2BGR)
+
+    # Aplicando OCR na imagem
+    custom_config = r'--oem 3 --psm 6'
+    result = pytesseract.image_to_string(img_cv, config=custom_config)
+
+    # Aplicando o regex
+    padrao = r"RESOLVE:(.*?)Documento assinado eletronicamente por"
+    correspondencia = re.search(padrao, result, re.DOTALL)
+
+    if correspondencia:
+        texto_capturado = correspondencia.group(1)
+
+    else:
+        print("Nenhuma correspondência encontrada.")
+
+    return texto_capturado
 
 
 # START -----------------------------------------------------------------------
@@ -76,11 +107,16 @@ def analise_reitora(texto):
 # START -----------------------------------------------------------------------
 # START -----------------------------------------------------------------------
 
-data = convert_pdf_img()
-valor_reitor = False
-    
 # Erro em que o tesseract não é encontrado pelo py
 pytesseract.pytesseract.tesseract_cmd = 'C:\Program Files\OCR\Tesseract.exe'
+
+arquivo = "pdfs/p10.pdf"
+
+data = convert_pdf_img(arquivo)
+
+texto_completo = analise_texto(arquivo)
+
+valor_reitor = False
 
 for i, img in enumerate(data):
     # Convertendo a imagem em formato OpenCV
@@ -98,7 +134,6 @@ for i, img in enumerate(data):
     # Caso seja a primeira página do documento, pegue o número da resolução e o ano correspondente.
     if i == 0:
         resol, ano, data, cabecalho = analise_pagina_1(result)
-        print(result)
     
     # Analisa em alguma página se encontra o formato especifico onde se nomeia o reitor/reitora.
     if not valor_reitor:
@@ -110,7 +145,5 @@ print("Resolução: ", resol)
 print("Ano: ", ano)
 print("Data: ", data)
 print("Cabeçalho: ", cabecalho)
-print("Reitor: ", reitor) 
-
-    
-
+print("Reitor: ", reitor)
+print("Texto Completo: ", texto_completo)
