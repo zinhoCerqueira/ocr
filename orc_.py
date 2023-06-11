@@ -2,7 +2,6 @@
 from flask import Flask, request, jsonify
 import re
 import requests
-import shutil
 import os
 
 from pdf2image import convert_from_path
